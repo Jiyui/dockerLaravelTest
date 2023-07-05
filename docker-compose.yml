@@ -1,50 +1,49 @@
+version: "3.7"
 services:
- 
-  #PHP Service
   app:
     build:
-      context: .
+      args:
+        user: dvresma
+        uid: 1000
+      context: ./
       dockerfile: Dockerfile
-    image: cloudsigma.com/php
-    container_name: app
+    image: esig
+    container_name: dockertest-app
     restart: unless-stopped
-    tty: true
-    environment:
-      SERVICE_NAME: app
-      SERVICE_TAGS: dev
-    working_dir: C:\laragon\www\
+    working_dir: /var/www/
+    volumes:
+      - ./:/var/www
     networks:
-      - app-network
- 
-  #Nginx Service
-  webserver:
-    image: nginx:alpine
-    container_name: webserver
-    restart: unless-stopped
-    tty: true
-    ports:
-      - "80:80"
-      - "443:443"
-    networks:
-      - app-network
- 
-  #MySQL Service
+      - esig
+
   db:
-    image: mysql:5.7.32
-    container_name: db
+    image: mysql:8.0
+    container_name: dockertest-db
     restart: unless-stopped
-    tty: true
-    ports:
-      - "3306:3306"
     environment:
-      MYSQL_DATABASE: laravel_web
-      MYSQL_ROOT_PASSWORD: replace_mysql_root_password
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_USER: ${DB_USERNAME}
       SERVICE_TAGS: dev
       SERVICE_NAME: mysql
+    volumes:
+      - ./docker-compose/mysql:/docker-entrypoint-initdb.d
     networks:
-      - app-network
- 
-#Docker Networks
+      - esig
+
+  nginx:
+    image: nginx:alpine
+    container_name: dockertest-nginx
+    restart: unless-stopped
+    ports:
+      - 8000:80
+    volumes:
+      - ./:/var/www
+      - ./docker-compose/nginx:/etc/nginx/conf.d/
+    networks:
+      - esig
+
 networks:
-  app-network:
+  esig:
     driver: bridge
